@@ -1,12 +1,19 @@
 import makeWASocket, {
   useMultiFileAuthState,
   DisconnectReason
-// @ts-ignore
 } from '@whiskeysockets/baileys'
-// @ts-ignore
 import P from 'pino'
+import { setAccountState } from '../config/accountState.js'
 
+/** @typedef {import('@whiskeysockets/baileys').WASocket} WASocket */
+
+/**
+ * @param {{ id: string, sessionPath: string }} params
+ * @returns {Promise<WASocket>}
+ */
 export async function createSocket({ id, sessionPath }) {
+  setAccountState(id, 'creating')
+
   const { state, saveCreds } = await useMultiFileAuthState(sessionPath)
 
   return new Promise((resolve, reject) => {
@@ -21,20 +28,25 @@ export async function createSocket({ id, sessionPath }) {
       const { connection, lastDisconnect, qr } = update
 
       if (qr) {
-        console.log(`📱 [${id}] Escaneie o QR Code`)
+        setAccountState(id, 'waiting_qr', { qr })
       }
 
       if (connection === 'open') {
-        console.log(`✅ [${id}] Conectado`)
-        resolve(socket) // 🔑 GARANTIA
+        setAccountState(id, 'connected')
+        resolve(socket)
       }
 
       if (connection === 'close') {
         const statusCode =
           lastDisconnect?.error?.output?.statusCode
 
-        if (statusCode !== DisconnectReason.loggedOut) {
-          reject(new Error('Conexão fechada antes de abrir'))
+        if (statusCode === DisconnectReason.loggedOut) {
+          setAccountState(id, 'logged_out')
+        } else {
+          setAccountState(id, 'error', {
+            error: 'connection_closed'
+          })
+          reject(new Error('Connection closed'))
         }
       }
     })

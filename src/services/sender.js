@@ -1,11 +1,11 @@
-import { getSocket } from '../config/socketRegistry.js'
+import { waitForSocket } from '../config/socketRegistry.js'
 
 export async function sendText({
   accountId,
   to,
   text
 }) {
-  const socket = getSocket(accountId)
+  const socket = await waitForSocket(accountId)
 
   if (!socket) {
     throw new Error(`Socket da conta ${accountId} não encontrado`)

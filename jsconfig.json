@@ -4,5 +4,5 @@
     "module": "ESNext",
     "target": "ES2022"
   },
-  "include": ["src"]
+  "include": ["src", "node_modules"]
 }

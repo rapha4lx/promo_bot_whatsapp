@@ -1,6 +1,11 @@
+import { createServer } from './api/server.js'
 import { loadAccountsFromSessions } from './config/loadAccounts.js'
 import { createSocket } from './socket/createSocket.js'
-import { registerSocket, waitForSocket } from './config/socketRegistry.js'
+import { registerSocket } from './config/socketRegistry.js'
+
+import accountsRouter from './api/routes/accounts.js'
+import groupsRouter from './api/routes/groups.js'
+
 
 async function start() {
   const accounts = loadAccountsFromSessions()
@@ -10,17 +15,27 @@ async function start() {
     return 
   }
   
-  console.log(accounts)
-  // for (const account of accounts) {
-  //   createSocket(account)
-  //     .then(socket => {
-  //       registerSocket(account.id, socket)
-  //     })
-  //     .catch(err => {
-  //       console.error(`Erro ao conectar ${account.id}`, err)
-  //     })
-  // }
+  for (const account of accounts) {
+    createSocket(account)
+      .then(socket => {
+        console.log(`Success login: ✅${account.id}`)
+        registerSocket(account.id, socket)
+      })
+      .catch(err => {
+        console.error(`Erro ao conectar ${account.id}`, err)
+      })
+  }
 }
 
 start()
 
+const app = createServer()
+
+app.use('/accounts', accountsRouter)
+app.use('/accounts', groupsRouter)  
+
+const PORT = 3000
+
+app.listen(PORT, () => {
+  console.log(`🚀 API rodando em http://localhost:${PORT}`)
+})
